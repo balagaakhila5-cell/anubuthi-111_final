@@ -235,16 +235,26 @@ function renderDashboard() {
 
   app.innerHTML = `
     <div class="dashboard">
-      <aside class="sidebar">
-        <img src="./assets/Group 68.png" alt="Logo" class="sidebar-logo" />
-        <div class="sidebar-heading">Check</div>
+     <aside class="sidebar">
 
-        <div class="side-nav">
-          <button class="side-btn ${activeTab === "admit" ? "active" : ""}" id="admitTabBtn">Admit Card</button>
-          <button class="side-btn ${activeTab === "result" ? "active" : ""}" id="resultTabBtn">Result</button>
-        </div>
-      </aside>
+  <div class="sidebar-logo-row">
+    <img src="./assets/logos-40-years 1.png" class="sidebar-years-logo" />
+    <img src="./assets/SRIRAM's-IAS.png" class="sidebar-logo" />
+  </div>
 
+  <div class="sidebar-heading">Check</div>
+
+  <div class="side-nav">
+    <button class="side-btn ${activeTab === "admit" ? "active" : ""}" id="admitTabBtn">Admit Card</button>
+    <button class="side-btn ${activeTab === "result" ? "active" : ""}" id="resultTabBtn">Result</button>
+  </div>
+
+  <!-- ✅ Logout Button -->
+  <div class="logout-wrap">
+    <button id="logoutBtn" class="logout-btn">↪ Logout</button>
+  </div>
+
+</aside>
       <main class="main-panel">
         ${activeTab === "admit" ? renderAdmitCardPage() : renderResultPage()}
       </main>
@@ -256,6 +266,16 @@ function renderDashboard() {
   const admitBtn = document.getElementById("admitTabBtn");
   const resultBtn = document.getElementById("resultTabBtn");
   const downloadBtn = document.getElementById("downloadAdmitBtn");
+
+  const logoutBtn = document.getElementById("logoutBtn");
+
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", function () {
+    loggedInStudent = null;
+    activeTab = "admit";
+    location.reload(); // goes back to login page
+  });
+}
 
   if (admitBtn) {
     admitBtn.addEventListener("click", function () {

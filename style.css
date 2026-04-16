@@ -35,13 +35,21 @@ input {
   padding: 14px 24px;
   display: flex;
   align-items: center;
+  gap: 16px;
+}
+
+.years-logo {
+  width: 58px;
+  height: auto;
+  display: block;
+  flex-shrink: 0;
 }
 
 .main-logo {
-  width: 320px;
-  max-width: 100%;
+  width: 260px;
   height: auto;
   display: block;
+  margin-top: 4px; /* moves Sriram IAS logo a little down */
 }
 
 .banner-section {
@@ -216,6 +224,19 @@ input {
   margin-top: 8px;
   margin-bottom: 14px;
 }
+.sidebar-top {
+  margin-bottom: 28px;
+}
+.sidebar {
+  width: 284px;
+  background: #2b226f;
+  color: #ffffff;
+  padding: 20px 20px 30px;
+  flex-shrink: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 
 .login-btn {
   width: 100%;
@@ -262,12 +283,22 @@ input {
   padding: 28px 20px 30px;
   flex-shrink: 0;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
+
 .sidebar-logo {
-  width: 215px;
+  width: 138px;
+  height: auto;
   display: block;
-  margin-bottom: 30px;
+  margin-top: 3px; /* moves logo slightly down */
+}
+
+.sidebar-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .sidebar-heading {
@@ -275,11 +306,17 @@ input {
   font-weight: 600;
   margin-bottom: 18px;
 }
+.sidebar-years-logo {
+  width: 30px;
+  height: auto;
+  display: block;
+  flex-shrink: 0;
+}
 
 .side-nav {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .side-btn {
@@ -297,14 +334,38 @@ input {
 .side-btn.active {
   background: #3251b1;
 }
+.logout-wrap {
+  margin-top: 350px;  /* increased space */
+}
+
+.logout-btn {
+  width: 100%;
+  border: none;
+  background: #ff1e1e;
+  color: #ffffff;
+  padding: 14px 18px;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: 0.2s ease;
+}
+
+
+.logout-btn:hover {
+  background: #de1919;
+}
 
 .main-panel {
   flex: 1;
   padding: 22px 34px 26px;
-
   display: flex;
   flex-direction: column;
-  align-items: center; /* 👈 ADD THIS */
+  align-items: center;
 }
 
 /* =========================
@@ -317,17 +378,13 @@ input {
 }
 
 .admit-page-title {
-  margin-left: 0;
-}
-.admit-page-title {
   font-family: Georgia, "Times New Roman", serif;
   color: #0c0b58;
   font-size: 32px;
   font-weight: 700;
   text-align: center;
   margin: 20px 0 24px;
-
-  width: calc(100% - 354px); /* 320px instructions + 34px gap */
+  width: calc(100% - 354px);
 }
 
 .admit-layout {
@@ -726,6 +783,10 @@ input {
   .instructions-marquee {
     height: 260px;
   }
+
+  .admit-page-title {
+    width: 100%;
+  }
 }
 
 @media (max-width: 1024px) {
@@ -760,6 +821,10 @@ input {
     width: 100%;
     min-height: auto;
   }
+
+  .logout-wrap {
+    margin-top: 24px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -768,7 +833,11 @@ input {
   }
 
   .main-logo {
-    width: 250px;
+    width: 210px;
+  }
+
+  .years-logo {
+    width: 46px;
   }
 
   .title {
