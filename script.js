@@ -162,7 +162,7 @@ function normalizeStudentRow(row) {
     mobile,
     name,
     city,
-    examDate: "April 18 ( Sat ) , 2026",
+    examDate: "April 18th Saturday , 2026",
     rank: generateRankFromScore(sheetScore),
     papers: [
       {
@@ -173,7 +173,7 @@ function normalizeStudentRow(row) {
         score: sheetScore
       },
       {
-        paper: "Paper 1 : CSAT",
+        paper: "Paper 2 : CSAT",
         correct,
         incorrect,
         blank,
@@ -235,26 +235,31 @@ function renderDashboard() {
 
   app.innerHTML = `
     <div class="dashboard">
-     <aside class="sidebar">
+      <aside class="sidebar">
+        <div class="sidebar-logo-row">
+          <img src="./assets/logos-40-years 1.png" class="sidebar-years-logo" />
+          <img src="./assets/SRIRAM's-IAS.png" class="sidebar-logo" />
+        </div>
 
-  <div class="sidebar-logo-row">
-    <img src="./assets/logos-40-years 1.png" class="sidebar-years-logo" />
-    <img src="./assets/SRIRAM's-IAS.png" class="sidebar-logo" />
-  </div>
+        <div class="side-nav">
+          <button class="side-btn ${activeTab === "admit" ? "active" : ""}" id="admitTabBtn">Admit Card</button>
+          <button class="side-btn ${activeTab === "result" ? "active" : ""}" id="resultTabBtn">Result</button>
+        </div>
 
-  <div class="sidebar-heading">Check</div>
+        <div class="general-info">
+          <div class="general-info-title">General Information :</div>
+          <ul class="general-info-list">
+            <li>Result of ANUBHUTI III will be declared within 72 hours.</li>
+            <li>Detailed video analysis and test discussion will be available on our official YouTube channel.</li>
+            <li>For updates, keep visiting our website.</li>
+          </ul>
+        </div>
 
-  <div class="side-nav">
-    <button class="side-btn ${activeTab === "admit" ? "active" : ""}" id="admitTabBtn">Admit Card</button>
-    <button class="side-btn ${activeTab === "result" ? "active" : ""}" id="resultTabBtn">Result</button>
-  </div>
+        <div class="logout-wrap">
+          <button id="logoutBtn" class="logout-btn">↪ Logout</button>
+        </div>
+      </aside>
 
-  <!-- ✅ Logout Button -->
-  <div class="logout-wrap">
-    <button id="logoutBtn" class="logout-btn">↪ Logout</button>
-  </div>
-
-</aside>
       <main class="main-panel">
         ${activeTab === "admit" ? renderAdmitCardPage() : renderResultPage()}
       </main>
@@ -266,16 +271,15 @@ function renderDashboard() {
   const admitBtn = document.getElementById("admitTabBtn");
   const resultBtn = document.getElementById("resultTabBtn");
   const downloadBtn = document.getElementById("downloadAdmitBtn");
-
   const logoutBtn = document.getElementById("logoutBtn");
 
-if (logoutBtn) {
-  logoutBtn.addEventListener("click", function () {
-    loggedInStudent = null;
-    activeTab = "admit";
-    location.reload(); // goes back to login page
-  });
-}
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", function () {
+      loggedInStudent = null;
+      activeTab = "admit";
+      location.reload();
+    });
+  }
 
   if (admitBtn) {
     admitBtn.addEventListener("click", function () {
@@ -305,12 +309,12 @@ function renderAdmitCardPage() {
 
   return `
     <div class="admit-page-wrap">
-      <h1 class="admit-page-title">ADMIT CARD</h1>
+      <h1 class="admit-page-title">ANUBUTHI III</h1>
 
       <div class="admit-layout">
         <div class="admit-center-column">
           <div class="student-card">
-            <div class="student-card-title">STUDENT DETAILS</div>
+            <div class="student-card-title">CANDIDATE DETAILS</div>
 
             <div class="avatar-circle">👤</div>
 
@@ -330,7 +334,7 @@ function renderAdmitCardPage() {
         </div>
 
         <div class="instructions-box">
-          <div class="instructions-title">INSTRUCTIONS</div>
+          <div class="instructions-title">IMPORTANT INSTRUCTION</div>
 
           <div class="instructions-marquee">
             <div class="instructions-track">
@@ -380,7 +384,7 @@ function renderResultPage() {
 
   return `
     <div class="result-page-wrap">
-      <div class="result-main-title">CANDIDATE RESULT</div>
+      <div class="result-main-title">CANDIDATE DETAILS</div>
 
       <div class="student-top-row">
         <div class="student-meta">
