@@ -6,8 +6,8 @@ const errorMessage = document.getElementById("errorMessage");
 let loggedInStudent = null;
 let activeTab = "admit";
 
-const SHEET_ID = "1hHFM29EDbvxaX1HWizPgO_2XdQW1yaF1hPhxn9c0WJQ";
-const SHEET_GID = "1906196581";
+const SHEET_ID = "1tJJPk4pnYKmQWqU25FmlvPcSP2h5L3VtzdMC2t3_6hU";
+const SHEET_GID = "1707527059";
 
 if (mobileInput && loginBtn) {
   mobileInput.addEventListener("input", function () {
@@ -146,50 +146,84 @@ function parseCSV(text) {
 }
 
 function normalizeStudentRow(row) {
-  const mobile = String(row["Mob No"] || "")
+  const mobile = String(
+    row["Mob No"] || row["Mobile"] || row["Mobile No"] || ""
+  )
     .replace(/\D/g, "")
     .trim();
 
-  const name = String(row["Candidate Name"] || "Student").trim();
-  const city = String(row["Centre"] || "Hyderabad").trim();
+  const name = String(row["Candidate Name"] || row["Name"] || "Student").trim();
+  const venue = String(row["Centre"] || row["Center"] || row["Venue"] || "Delhi").trim();
 
-  const correct = Number(row["Correct"] || 0);
-  const incorrect = Number(row["Incorrect"] || 0);
-  const blank = Number(row["Blank"] || 0);
-  const sheetScore = Number(row["Score"] || 0);
+  const correct = normalizeNumber(row["Correct"]);
+  const incorrect = normalizeNumber(row["Incorrect"]);
+  const blank = normalizeNumber(row["Blank"]);
+  const sheetScore = normalizeNumber(row["Score"]);
+
+  const hasResultData =
+    rowHasValue(row["Correct"]) ||
+    rowHasValue(row["Incorrect"]) ||
+    rowHasValue(row["Blank"]) ||
+    rowHasValue(row["Score"]);
+
+  const derivedScore =
+    hasResultData && !Number.isNaN(sheetScore)
+      ? sheetScore
+      : calculateScore(correct, incorrect);
 
   return {
     mobile,
     name,
-    city,
-    examDate: "April 18th Saturday , 2026",
-    rank: generateRankFromScore(sheetScore),
-    papers: [
-      {
-        paper: "Paper 1 : General Studies",
-        correct,
-        incorrect,
-        blank,
-        score: sheetScore
-      },
-      {
-        paper: "Paper 2 : CSAT",
-        correct,
-        incorrect,
-        blank,
-        score: sheetScore
-      }
-    ],
+    venue,
+    examDate: "April 18th Saturday, 2026",
+    rank: hasResultData ? generateRankFromScore(derivedScore) : "-",
+    papers: hasResultData
+      ? [
+          {
+            paper: "Paper I : General Studies",
+            correct,
+            incorrect,
+            blank,
+            score: !Number.isNaN(sheetScore) ? sheetScore : derivedScore
+          },
+          {
+            paper: "Paper II : CSAT",
+            correct,
+            incorrect,
+            blank,
+            score: !Number.isNaN(sheetScore) ? sheetScore : derivedScore
+          }
+        ]
+      : [],
     instructions: [
-      "The mobile number filled in the OMR sheet will be treated as the registered roll number, and results can be accessed using the same mobile number only.",
+      "The mobile number filled in the OMR Sheet will be treated as the roll number and results can be accessed using the same mobile number only.",
       "You must report at the Examination Center 30 minutes prior to the commencement of the exam.",
       "Candidates can give tests only at the assigned examination venue and allotted examination time.",
-      "Admit card must be produced whenever required by the authorities.",
-      "Candidates should verify all details printed on the admit card carefully.",
-      "Any mismatch in candidate details should be reported immediately."
+      "Fill Name, Mobile no. and other details carefully."
     ],
-    originalScore: sheetScore
+    timings: [
+      {
+        subject: "Paper I (General Studies)",
+        time: "9:30 AM - 11:30 AM"
+      },
+      {
+        subject: "Paper II (CSAT)",
+        time: "2:30 PM - 4:30 PM"
+      }
+    ],
+    originalScore: hasResultData ? derivedScore : null,
+    hasResultData
   };
+}
+
+function normalizeNumber(value) {
+  if (value === undefined || value === null || value === "") return 0;
+  const parsed = Number(String(value).replace(/,/g, "").trim());
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function rowHasValue(value) {
+  return value !== undefined && value !== null && String(value).trim() !== "";
 }
 
 function calculateScore(correct, incorrect) {
@@ -210,16 +244,31 @@ function generateRankFromScore(score) {
 }
 
 function calculateTrendScore(student) {
-  if (student.originalScore && !Number.isNaN(student.originalScore)) {
+  if (
+    student.originalScore !== null &&
+    student.originalScore !== undefined &&
+    !Number.isNaN(student.originalScore)
+  ) {
     return Number(student.originalScore);
   }
 
   const firstPaper = student.papers[0];
+  if (!firstPaper) return 0;
+
   return calculateScore(firstPaper.correct, firstPaper.incorrect);
 }
 
 function getAnalysisData(student) {
   const firstPaper = student.papers[0];
+  if (!firstPaper) {
+    return {
+      correct: 0,
+      incorrect: 0,
+      blank: 0,
+      total: 0
+    };
+  }
+
   const total = firstPaper.correct + firstPaper.incorrect + firstPaper.blank;
 
   return {
@@ -237,8 +286,8 @@ function renderDashboard() {
     <div class="dashboard">
       <aside class="sidebar">
         <div class="sidebar-logo-row">
-          <img src="./assets/logos-40-years 1.png" class="sidebar-years-logo" />
-          <img src="./assets/SRIRAM's-IAS.png" class="sidebar-logo" />
+          <img src="./assets/logos-40-years 1.png" class="sidebar-years-logo" alt="40 years" />
+          <img src="./assets/SRIRAM's-IAS.png" class="sidebar-logo" alt="Sriram IAS" />
         </div>
 
         <div class="side-nav">
@@ -247,9 +296,9 @@ function renderDashboard() {
         </div>
 
         <div class="general-info">
-          <div class="general-info-title">General Information :</div>
+          <div class="general-info-title">General Information</div>
           <ul class="general-info-list">
-            <li>Result of ANUBHUTI III will be declared within 72 hours.</li>
+            <li>Result of ANUBHUTHI III will be declared within 72 hours.</li>
             <li>Detailed video analysis and test discussion will be available on our official YouTube channel.</li>
             <li>For updates, keep visiting our website.</li>
           </ul>
@@ -290,6 +339,11 @@ function renderDashboard() {
 
   if (resultBtn) {
     resultBtn.addEventListener("click", function () {
+      if (!loggedInStudent.hasResultData) {
+        alert("The result will be released soon! Stay updated with our official website.");
+        return;
+      }
+
       activeTab = "result";
       renderDashboard();
     });
@@ -303,8 +357,8 @@ function renderDashboard() {
 function renderAdmitCardPage() {
   const student = loggedInStudent;
 
-  const animatedInstructions = [...student.instructions, ...student.instructions]
-    .map((item) => `<div class="instruction-item">${item}</div>`)
+  const instructionsHtml = student.instructions
+    .map((item) => `<div class="instruction-item">${escapeHtml(item)}</div>`)
     .join("");
 
   return `
@@ -316,14 +370,28 @@ function renderAdmitCardPage() {
           <div class="student-card">
             <div class="student-card-title">CANDIDATE DETAILS</div>
 
-            <div class="avatar-circle">👤</div>
+            <div class="avatar-circle">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"></path>
+                <path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path>
+              </svg>
+            </div>
 
-            <div class="student-name">${student.name}</div>
-            <div class="student-mobile">${student.mobile}</div>
-            <div class="student-city">📍 ${student.city}</div>
+            <div class="student-name">${escapeHtml(student.name)}</div>
+            <div class="student-mobile">${escapeHtml(student.mobile)}</div>
+
+            <div class="student-city">
+              <span class="location-icon-svg" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11Z"></path>
+                  <circle cx="12" cy="10" r="2.3"></circle>
+                </svg>
+              </span>
+              <span>${escapeHtml(student.venue)}</span>
+            </div>
 
             <button id="downloadAdmitBtn" class="download-btn">
-              Download Admit Card &nbsp; ⬇
+              Download Admit Card ⬇
             </button>
           </div>
 
@@ -334,11 +402,10 @@ function renderAdmitCardPage() {
         </div>
 
         <div class="instructions-box">
-          <div class="instructions-title">IMPORTANT INSTRUCTION</div>
-
+          <div class="instructions-title">IMPORTANT INSTRUCTIONS</div>
           <div class="instructions-marquee">
             <div class="instructions-track">
-              ${animatedInstructions}
+              ${instructionsHtml}
             </div>
           </div>
         </div>
@@ -346,9 +413,21 @@ function renderAdmitCardPage() {
     </div>
   `;
 }
-
 function renderResultPage() {
   const student = loggedInStudent;
+
+  if (!student.hasResultData) {
+    return `
+      <div class="result-page-wrap">
+        <div class="result-main-title">CANDIDATE DETAILS</div>
+        <div class="result-coming-soon">
+          <h3>The result will be released soon!</h3>
+          <p>Stay updated with our official website.</p>
+        </div>
+      </div>
+    `;
+  }
+
   const trendScore = calculateTrendScore(student);
   const analysis = getAnalysisData(student);
 
@@ -371,8 +450,9 @@ function renderResultPage() {
     })
     .join("");
 
-  const correctPercent = ((analysis.correct / analysis.total) * 100).toFixed(2);
-  const incorrectPercent = ((analysis.incorrect / analysis.total) * 100).toFixed(2);
+  const total = analysis.total || 1;
+  const correctPercent = ((analysis.correct / total) * 100).toFixed(2);
+  const incorrectPercent = ((analysis.incorrect / total) * 100).toFixed(2);
 
   const donutStyle = `
     conic-gradient(
@@ -388,7 +468,9 @@ function renderResultPage() {
 
       <div class="student-top-row">
         <div class="student-meta">
-          ${student.name} <span>|</span> ${student.mobile}
+          <span>${escapeHtml(student.name)}</span>
+          <span>|</span>
+          <span>${escapeHtml(student.mobile)}</span>
         </div>
 
         <div class="rank-box-wrap">
@@ -465,82 +547,184 @@ function downloadAdmitCard() {
   const student = loggedInStudent;
   const printBox = document.getElementById("printAdmitCard");
 
-  if (!printBox) return;
+  if (!printBox || !student) return;
+
+  const timingsHtml = student.timings
+    .map(
+      (item) => `
+        <tr>
+          <td>${escapeHtml(item.subject)}</td>
+          <td>${escapeHtml(item.time)}</td>
+        </tr>
+      `
+    )
+    .join("");
+
+  const instructionsHtml = student.instructions
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("");
 
   printBox.innerHTML = `
-    <div class="print-wrapper">
-      <div class="print-header">
-        <h1>ANUBUTHI III - ADMIT CARD</h1>
-        <p>All India Open Mock Test 2026</p>
-      </div>
+  <div class="print-sheet">
 
-      <div class="print-card">
-        <div class="watermark">SRIRAM IAS</div>
-        <div><strong>Name:</strong> ${student.name}</div>
-        <div><strong>Mobile Number:</strong> ${student.mobile}</div>
-        <div><strong>City:</strong> ${student.city}</div>
-        <div><strong>Examination Date:</strong> ${student.examDate}</div>
-        <div><strong>All India Rank:</strong> ${student.rank}</div>
-      </div>
+    <!-- LOGOS ROW -->
+    <div class="print-logo-row">
+      <img src="./assets/logos-40-years 1.png" class="print-years-logo" />
+      <img src="./assets/SRIRAM's-IAS.png" class="print-main-logo" />
     </div>
-  `;
+
+    <div class="print-brand-line">
+      Serving The Nation Since 1985
+    </div>
+
+    <!-- TITLE -->
+    <div class="print-main-title">ANUBUTHI III</div>
+    <div class="print-sub-title">All India Open Mock Test 2026</div>
+    <div class="print-admit-title">e-Admit Card</div>
+
+    <!-- DETAILS TABLE -->
+    <table class="print-info-table">
+      <tr>
+        <td>Name</td>
+        <td>${student.name}</td>
+      </tr>
+      <tr>
+        <td>Mobile No.</td>
+        <td>${student.mobile}</td>
+      </tr>
+      <tr>
+        <td>Venue of Examination</td>
+        <td>${student.venue}</td>
+      </tr>
+    </table>
+
+    <!-- TIMINGS -->
+    <table class="print-time-table">
+      <thead>
+        <tr>
+          <th>Subject</th>
+          <th>Timing</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Paper I (General Studies)</td>
+          <td>9:30 AM - 11:30 AM</td>
+        </tr>
+        <tr>
+          <td>Paper II (CSAT)</td>
+          <td>2:30 PM - 4:30 PM</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- INSTRUCTIONS -->
+    <div class="print-instruction-heading">INSTRUCTIONS</div>
+
+    <ul class="print-instructions">
+      <li>The mobile number filled in the OMR Sheet will be treated as the roll number and results can be accessed using the same mobile number only.</li>
+      <li>You must report at the Examination Center 30 minutes prior to the commencement of the exam.</li>
+      <li>Candidates can give tests only at the assigned examination venue and allotted examination time.</li>
+      <li>Fill Name, Mobile no. and other details carefully.</li>
+    </ul>
+
+  </div>
+`;
 
   const originalContent = document.body.innerHTML;
 
   document.body.innerHTML = `
     <style>
-      @media print {
-        body {
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
+      @page {
+        size: A4;
+        margin: 16mm;
       }
 
-      .print-wrapper {
-        width: 800px;
-        padding: 40px;
-        font-family: Arial, sans-serif;
-        background: white;
+      body {
+        margin: 0;
+        padding: 0;
+        background: #ffffff;
+        font-family: Arial, Helvetica, sans-serif;
       }
 
-      .print-header {
+      .print-sheet {
+        width: 100%;
+        background: #ffffff;
+        color: #111111;
+      }
+
+      .print-top-title {
         text-align: center;
-        margin-bottom: 30px;
+        margin-bottom: 16px;
+      }
+
+      .print-top-title h1 {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 30px;
         color: #0c0b58;
+        margin: 0 0 4px;
       }
 
-      .print-header h1 {
-        font-family: Georgia, serif;
-        font-size: 28px;
-        margin-bottom: 6px;
-      }
-
-      .print-card {
-        position: relative;
-        padding: 28px 32px;
-        border-radius: 12px;
-        background: linear-gradient(
-          135deg,
-          rgba(12, 11, 88, 0.08) 0%,
-          rgba(255, 255, 255, 1) 40%,
-          rgba(255, 0, 0, 0.08) 100%
-        );
-        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-        font-size: 18px;
-        line-height: 2;
-      }
-
-      .watermark {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 70px;
+      .mock-line {
+        font-size: 20px;
         font-weight: 700;
-        font-family: Georgia, serif;
-        color: rgba(12, 11, 88, 0.05);
-        white-space: nowrap;
-        pointer-events: none;
+        margin-bottom: 2px;
+      }
+
+      .admit-line {
+        font-size: 19px;
+        font-weight: 700;
+      }
+
+      .print-info-row {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        gap: 10px;
+        padding: 8px 0;
+        font-size: 17px;
+      }
+
+      .print-info-label {
+        font-weight: 700;
+      }
+
+      .print-section-title {
+        margin-top: 20px;
+        margin-bottom: 10px;
+        font-size: 20px;
+        color: #0c0b58;
+        font-weight: 700;
+      }
+
+      .print-instructions {
+        padding-left: 18px;
+        margin-top: 0;
+        margin-bottom: 18px;
+      }
+
+      .print-instructions li {
+        margin-bottom: 8px;
+        line-height: 1.45;
+        font-size: 15px;
+      }
+
+      .print-time-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+
+      .print-time-table th,
+      .print-time-table td {
+        border: 1px solid #111111;
+        padding: 10px 12px;
+        font-size: 15px;
+        text-align: left;
+      }
+
+      .print-time-table th {
+        background: #f2f4f7;
+        font-weight: 700;
       }
     </style>
 
@@ -548,7 +732,15 @@ function downloadAdmitCard() {
   `;
 
   window.print();
-
   document.body.innerHTML = originalContent;
   location.reload();
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
