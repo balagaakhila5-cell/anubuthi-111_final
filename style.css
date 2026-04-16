@@ -227,6 +227,9 @@ input {
 .sidebar-top {
   margin-bottom: 28px;
 }
+.side-menu {
+  padding-top: 120px;
+}
 .sidebar {
   width: 284px;
   background: #2b226f;
@@ -299,11 +302,13 @@ input {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-bottom: 28px;
 }
 
 .sidebar-heading {
   font-size: 16px;
   font-weight: 600;
+  margin-top: 18px;   /* add this */
   margin-bottom: 18px;
 }
 .sidebar-years-logo {
@@ -313,10 +318,13 @@ input {
   flex-shrink: 0;
 }
 
+
+
 .side-nav {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  margin-top: 8px;    /* add this */
 }
 
 .side-btn {
@@ -335,7 +343,7 @@ input {
   background: #3251b1;
 }
 .logout-wrap {
-  margin-top: 350px;  /* increased space */
+  margin-top: 300px;   /* increase this if needed */
 }
 
 .logout-btn {
@@ -820,6 +828,7 @@ input {
   .sidebar {
     width: 100%;
     min-height: auto;
+     padding-top: 120px;
   }
 
   .logout-wrap {
