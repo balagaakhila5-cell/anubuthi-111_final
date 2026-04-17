@@ -54,7 +54,7 @@ if (mobileInput && loginBtn) {
     errorMessage.textContent = "";
 
     try {
-      const students = await fetchStudentsFromAllSheets();
+     const students = await fetchStudentsFromGoogleSheetCSV();
 
       const student = students.find((item) => {
         return String(item.mobile).replace(/\D/g, "") === mobileNumber;
@@ -80,49 +80,40 @@ if (mobileInput && loginBtn) {
   });
 }
 
-async function fetchStudentsFromAllSheets() {
-  const allResults = await Promise.all(
-    SHEETS.map(async (sheet) => {
-      try {
-        const rows = await fetchSingleSheetCSV(sheet.gid);
-        return rows.map((row) => normalizeStudentRow(row, sheet));
-      } catch (error) {
-        console.error(`Error in sheet gid ${sheet.gid}:`, error);
-        return [];
-      }
-    })
-  );
+async function fetchStudentsFromGoogleSheetCSV() {
+  let allData = [];
 
-  return allResults.flat().filter((item) => item.mobile);
-}
+  for (let i = 0; i < SHEETS.length; i++) {
+    const gid = SHEETS[i].gid;
 
-async function fetchSingleSheetCSV(gid) {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
-  const response = await fetch(url);
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch CSV for gid ${gid}`);
-  }
+    const response = await fetch(url);
 
-  const csvText = await response.text();
-  const rows = parseCSV(csvText);
+    if (!response.ok) continue;
 
-  if (!rows.length) {
-    return [];
-  }
+    const csvText = await response.text();
+    const rows = parseCSV(csvText);
 
-  const headers = rows[0].map((h) => h.trim());
-  const dataRows = rows.slice(1);
+    if (!rows.length) continue;
 
-  return dataRows
-    .filter((row) => row.some((cell) => String(cell || "").trim() !== ""))
-    .map((row) => {
+    const headers = rows[0].map((h) => h.trim());
+    const dataRows = rows.slice(1);
+
+    const rawData = dataRows.map((row) => {
       const obj = {};
       headers.forEach((header, index) => {
         obj[header] = row[index] ? row[index].trim() : "";
       });
       return obj;
     });
+
+    const normalized = rawData.map(normalizeStudentRow).filter((item) => item.mobile);
+
+    allData = [...allData, ...normalized];
+  }
+
+  return allData;
 }
 
 function parseCSV(text) {
@@ -729,10 +720,6 @@ function downloadAdmitCard() {
       <tr>
         <td>Venue of Examination</td>
         <td>${escapeHtml(student.venue)}</td>
-      </tr>
-      <tr>
-        <td>Slot</td>
-        <td>${escapeHtml(student.slot || "")}</td>
       </tr>
     </table>
 
