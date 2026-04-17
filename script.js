@@ -502,9 +502,18 @@ function renderResultPage() {
         <div class="chart-box">
           <div class="section-heading">📈 Performance Trend</div>
 
-          <div class="chart-area">
+         <div class="chart-area">
             ${renderChartGrid()}
-            <div class="chart-dot" style="bottom:${(Math.min(trendScore, 100) / 100) * 220}px;"></div>
+            <div 
+              class="chart-dot-with-tooltip"
+              style="bottom:${(Math.min(trendScore, 100) / 100) * 220}px;"
+            >
+              <div class="chart-tooltip">
+                <div>Current Test</div>
+                <div>Score: ${trendScore.toFixed(2)}</div>
+              </div>
+              <div class="chart-dot"></div>
+            </div>
             <div class="x-label">Current Test</div>
           </div>
         </div>
