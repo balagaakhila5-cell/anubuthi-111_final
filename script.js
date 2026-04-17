@@ -6,8 +6,8 @@ const errorMessage = document.getElementById("errorMessage");
 let loggedInStudent = null;
 let activeTab = "admit";
 
-const SHEET_ID = "1tJJPk4pnYKmQWqU25FmlvPcSP2h5L3VtzdMC2t3_6hU";
-const SHEET_GID = "1707527059";
+const SHEET_ID = "14rrufXMffaHXUnLc3Vdim1-DwPOl0aTSIXe-7SWIuwM";
+const SHEET_GID = "2097186827";
 
 if (mobileInput && loginBtn) {
   mobileInput.addEventListener("input", function () {
@@ -125,9 +125,11 @@ function parseCSV(text) {
       }
 
       row.push(current);
+
       if (row.some((cell) => cell.trim() !== "")) {
         rows.push(row);
       }
+
       row = [];
       current = "";
     } else {
@@ -147,24 +149,66 @@ function parseCSV(text) {
 
 function normalizeStudentRow(row) {
   const mobile = String(
-    row["Mob No"] || row["Mobile"] || row["Mobile No"] || ""
+    row["Phone Number"] ||
+      row["Mob No"] ||
+      row["Mobile"] ||
+      row["Mobile No"] ||
+      ""
   )
     .replace(/\D/g, "")
     .trim();
 
-  const name = String(row["Candidate Name"] || row["Name"] || "Student").trim();
-  const venue = String(row["Centre"] || row["Center"] || row["Venue"] || "Delhi").trim();
+  const name = String(
+    row["Name"] ||
+      row["Candidate Name"] ||
+      "Student"
+  ).trim();
 
-  const correct = normalizeNumber(row["Correct"]);
-  const incorrect = normalizeNumber(row["Incorrect"]);
-  const blank = normalizeNumber(row["Blank"]);
-  const sheetScore = normalizeNumber(row["Score"]);
+  const venue = String(
+    row["Venue"] ||
+      row["Centre"] ||
+      row["Center"] ||
+      row["City"] ||
+      "Delhi"
+  ).trim();
+
+  const correct = normalizeNumber(
+    row["Correct"] ||
+      row["Paper I Correct"] ||
+      row["GS Correct"]
+  );
+
+  const incorrect = normalizeNumber(
+    row["Incorrect"] ||
+      row["Paper I Incorrect"] ||
+      row["GS Incorrect"]
+  );
+
+  const blank = normalizeNumber(
+    row["Blank"] ||
+      row["Paper I Blank"] ||
+      row["GS Blank"]
+  );
+
+  const sheetScore = normalizeNumber(
+    row["Score"] ||
+      row["Paper I Score"] ||
+      row["GS Score"]
+  );
 
   const hasResultData =
     rowHasValue(row["Correct"]) ||
     rowHasValue(row["Incorrect"]) ||
     rowHasValue(row["Blank"]) ||
-    rowHasValue(row["Score"]);
+    rowHasValue(row["Score"]) ||
+    rowHasValue(row["Paper I Correct"]) ||
+    rowHasValue(row["Paper I Incorrect"]) ||
+    rowHasValue(row["Paper I Blank"]) ||
+    rowHasValue(row["Paper I Score"]) ||
+    rowHasValue(row["GS Correct"]) ||
+    rowHasValue(row["GS Incorrect"]) ||
+    rowHasValue(row["GS Blank"]) ||
+    rowHasValue(row["GS Score"]);
 
   const derivedScore =
     hasResultData && !Number.isNaN(sheetScore)
@@ -188,10 +232,10 @@ function normalizeStudentRow(row) {
           },
           {
             paper: "Paper II : CSAT",
-            correct,
-            incorrect,
-            blank,
-            score: !Number.isNaN(sheetScore) ? sheetScore : derivedScore
+            correct: 0,
+            incorrect: 0,
+            blank: 0,
+            score: 0
           }
         ]
       : [],
@@ -204,11 +248,11 @@ function normalizeStudentRow(row) {
     timings: [
       {
         subject: "Paper I (General Studies)",
-        time: "9:30 AM - 11:30 AM"
+        time: row["GS Paper I Slot"] || "9:30 AM - 11:30 AM"
       },
       {
         subject: "Paper II (CSAT)",
-        time: "2:30 PM - 4:30 PM"
+        time: row["CSAT"] || "2:30 PM - 4:30 PM"
       }
     ],
     originalScore: hasResultData ? derivedScore : null,
@@ -260,6 +304,7 @@ function calculateTrendScore(student) {
 
 function getAnalysisData(student) {
   const firstPaper = student.papers[0];
+
   if (!firstPaper) {
     return {
       correct: 0,
@@ -413,6 +458,7 @@ function renderAdmitCardPage() {
     </div>
   `;
 }
+
 function renderResultPage() {
   const student = loggedInStudent;
 
@@ -502,7 +548,7 @@ function renderResultPage() {
         <div class="chart-box">
           <div class="section-heading">📈 Performance Trend</div>
 
-         <div class="chart-area">
+          <div class="chart-area">
             ${renderChartGrid()}
             <div 
               class="chart-dot-with-tooltip"
@@ -558,25 +604,9 @@ function downloadAdmitCard() {
 
   if (!printBox || !student) return;
 
-  const timingsHtml = student.timings
-    .map(
-      (item) => `
-        <tr>
-          <td>${escapeHtml(item.subject)}</td>
-          <td>${escapeHtml(item.time)}</td>
-        </tr>
-      `
-    )
-    .join("");
-
-  const instructionsHtml = student.instructions
-    .map((item) => `<li>${escapeHtml(item)}</li>`)
-    .join("");
-
   printBox.innerHTML = `
   <div class="print-sheet">
 
-    <!-- LOGOS ROW -->
     <div class="print-logo-row">
       <img src="./assets/logos-40-years 1.png" class="print-years-logo" />
       <img src="./assets/SRIRAM's-IAS.png" class="print-main-logo" />
@@ -586,28 +616,25 @@ function downloadAdmitCard() {
       Serving The Nation Since 1985
     </div>
 
-    <!-- TITLE -->
-    <div class="print-main-title">ANUBHUTI III</div>
+    <div class="print-main-title">ANUBUTHI III</div>
     <div class="print-sub-title">All India Open Mock Test 2026</div>
     <div class="print-admit-title">e-Admit Card</div>
 
-    <!-- DETAILS TABLE -->
     <table class="print-info-table">
       <tr>
         <td>Name</td>
-        <td>${student.name}</td>
+        <td>${escapeHtml(student.name)}</td>
       </tr>
       <tr>
         <td>Mobile No.</td>
-        <td>${student.mobile}</td>
+        <td>${escapeHtml(student.mobile)}</td>
       </tr>
       <tr>
         <td>Venue of Examination</td>
-        <td>${student.venue}</td>
+        <td>${escapeHtml(student.venue)}</td>
       </tr>
     </table>
 
-    <!-- TIMINGS -->
     <table class="print-time-table">
       <thead>
         <tr>
@@ -617,17 +644,16 @@ function downloadAdmitCard() {
       </thead>
       <tbody>
         <tr>
-          <td>Paper I (General Studies)</td>
-          <td>9:30 AM - 11:30 AM</td>
+          <td>${escapeHtml(student.timings[0]?.subject || "Paper I (General Studies)")}</td>
+          <td>${escapeHtml(student.timings[0]?.time || "9:30 AM - 11:30 AM")}</td>
         </tr>
         <tr>
-          <td>Paper II (CSAT)</td>
-          <td>2:30 PM - 4:30 PM</td>
+          <td>${escapeHtml(student.timings[1]?.subject || "Paper II (CSAT)")}</td>
+          <td>${escapeHtml(student.timings[1]?.time || "2:30 PM - 4:30 PM")}</td>
         </tr>
       </tbody>
     </table>
 
-    <!-- INSTRUCTIONS -->
     <div class="print-instruction-heading">INSTRUCTIONS</div>
 
     <ul class="print-instructions">
