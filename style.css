@@ -584,13 +584,13 @@ input {
   padding: 22px 18px;
   min-height: 600px;
   position: sticky;
-  top: 20px;
+  top: 10px;
 }
 
 .instructions-title {
   text-align: center;
   color: #12185d;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   margin-bottom: 18px;
 }
@@ -604,7 +604,7 @@ input {
 .instructions-track {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   animation: none;
 }
 
@@ -972,7 +972,7 @@ input {
 
 .print-main-title {
   text-align: center;
-  font-size: 90px;
+  font-size: 60px;
   font-weight: 800;
   color: #4a73c9;
   margin-bottom: 15px;
@@ -1042,7 +1042,7 @@ input {
 }
 
 .print-instructions li {
-  margin-bottom: 15px;
+  margin-bottom: 9px;
 }
 .title {
   font-family: Georgia, "Times New Roman", serif;
@@ -1241,6 +1241,28 @@ input {
   align-items: center;
   justify-content: center;
   opacity: 0.8;
+}
+.print-assistance {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 15px;
+  color: #2a5db0;
+  font-weight: 500;
+  page-break-inside: avoid;
+}
+
+.headphone-icon {
+  font-size: 16px;
+}
+.print-sheet {
+  page-break-inside: avoid;
+}
+
+.print-instructions {
+  page-break-inside: avoid;
 }
 @media (max-width: 1200px) {
   .result-bottom-grid,

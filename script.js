@@ -662,6 +662,10 @@ function downloadAdmitCard() {
       <li>Candidates can give tests only at the assigned examination venue and allotted examination time.</li>
       <li>Fill Name, Mobile no. and other details carefully.</li>
     </ul>
+        <div class="print-assistance">
+      <span class="headphone-icon">🎧</span>
+      <span>For any Assistance call <b>9811489560</b></span>
+    </div>
 
   </div>
 `;
