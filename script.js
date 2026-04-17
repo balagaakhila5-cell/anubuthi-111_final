@@ -587,7 +587,7 @@ function downloadAdmitCard() {
     </div>
 
     <!-- TITLE -->
-    <div class="print-main-title">ANUBUTHI III</div>
+    <div class="print-main-title">ANUBHUTI III</div>
     <div class="print-sub-title">All India Open Mock Test 2026</div>
     <div class="print-admit-title">e-Admit Card</div>
 
