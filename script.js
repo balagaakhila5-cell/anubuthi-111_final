@@ -6,8 +6,8 @@ const errorMessage = document.getElementById("errorMessage");
 let loggedInStudent = null;
 let activeTab = "admit";
 
-const SHEET_ID = "14rrufXMffaHXUnLc3Vdim1-DwPOl0aTSIXe-7SWIuwM";
-const SHEET_GID = "2097186827";
+const SHEET_ID = "1TOD8HTz3B4NxxvJAGyWqac_o4zIvQVc0gu63RQZ1q90";
+const SHEET_GID = "999745834";
 
 if (mobileInput && loginBtn) {
   mobileInput.addEventListener("input", function () {
