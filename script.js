@@ -740,7 +740,7 @@ function downloadAdmitCard() {
       .print-instructions li {
         margin-bottom: 8px;
         line-height: 1.45;
-        font-size: 15px;
+        font-size: 13px;
       }
 
       .print-time-table {
