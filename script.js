@@ -7,7 +7,17 @@ let loggedInStudent = null;
 let activeTab = "admit";
 
 const SHEET_ID = "1TOD8HTz3B4NxxvJAGyWqac_o4zIvQVc0gu63RQZ1q90";
-const SHEET_GID = "999745834";
+
+const SHEETS = [
+  { gid: "884908558", slot: "Delhi slot 1 JVSD" },
+  { gid: "40104784", slot: "Delhi slot 1 Popular Juice" },
+  { gid: "121004388", slot: "Delhi slot 2 SR IAS" },
+  { gid: "1943346486", slot: "Delhi slot 2 JVSD" },
+  { gid: "146126469", slot: "Delhi slot 2 Popular Juice" },
+  { gid: "4471119", slot: "Hyderabad" },
+  { gid: "1842258190", slot: "Pune Slot 1" },
+  { gid: "2014015039", slot: "Pune Slot 2" }
+];
 
 if (mobileInput && loginBtn) {
   mobileInput.addEventListener("input", function () {
@@ -44,7 +54,7 @@ if (mobileInput && loginBtn) {
     errorMessage.textContent = "";
 
     try {
-      const students = await fetchStudentsFromGoogleSheetCSV();
+      const students = await fetchStudentsFromAllSheets();
 
       const student = students.find((item) => {
         return String(item.mobile).replace(/\D/g, "") === mobileNumber;
@@ -70,33 +80,49 @@ if (mobileInput && loginBtn) {
   });
 }
 
-async function fetchStudentsFromGoogleSheetCSV() {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
+async function fetchStudentsFromAllSheets() {
+  const allResults = await Promise.all(
+    SHEETS.map(async (sheet) => {
+      try {
+        const rows = await fetchSingleSheetCSV(sheet.gid);
+        return rows.map((row) => normalizeStudentRow(row, sheet));
+      } catch (error) {
+        console.error(`Error in sheet gid ${sheet.gid}:`, error);
+        return [];
+      }
+    })
+  );
+
+  return allResults.flat().filter((item) => item.mobile);
+}
+
+async function fetchSingleSheetCSV(gid) {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
   const response = await fetch(url);
 
   if (!response.ok) {
-    throw new Error("Failed to fetch CSV from Google Sheet");
+    throw new Error(`Failed to fetch CSV for gid ${gid}`);
   }
 
   const csvText = await response.text();
   const rows = parseCSV(csvText);
 
   if (!rows.length) {
-    throw new Error("No data found in sheet");
+    return [];
   }
 
   const headers = rows[0].map((h) => h.trim());
   const dataRows = rows.slice(1);
 
-  const rawData = dataRows.map((row) => {
-    const obj = {};
-    headers.forEach((header, index) => {
-      obj[header] = row[index] ? row[index].trim() : "";
+  return dataRows
+    .filter((row) => row.some((cell) => String(cell || "").trim() !== ""))
+    .map((row) => {
+      const obj = {};
+      headers.forEach((header, index) => {
+        obj[header] = row[index] ? row[index].trim() : "";
+      });
+      return obj;
     });
-    return obj;
-  });
-
-  return rawData.map(normalizeStudentRow).filter((item) => item.mobile);
 }
 
 function parseCSV(text) {
@@ -147,68 +173,126 @@ function parseCSV(text) {
   return rows;
 }
 
-function normalizeStudentRow(row) {
-  const mobile = String(
-    row["Phone Number"] ||
-      row["Mob No"] ||
-      row["Mobile"] ||
-      row["Mobile No"] ||
-      ""
-  )
+function normalizeKey(key) {
+  return String(key || "")
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function getField(row, possibleKeys) {
+  const rowKeys = Object.keys(row);
+  const normalizedMap = {};
+
+  rowKeys.forEach((key) => {
+    normalizedMap[normalizeKey(key)] = row[key];
+  });
+
+  for (const key of possibleKeys) {
+    const value = normalizedMap[normalizeKey(key)];
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      return String(value).trim();
+    }
+  }
+
+  return "";
+}
+
+function normalizeStudentRow(row, sheetInfo = {}) {
+  const mobile = getField(row, [
+    "Phone Number",
+    "PhoneNumber",
+    "Phone",
+    "Mob No",
+    "Mobile",
+    "Mobile No",
+    "Mobile Number",
+    "Contact Number"
+  ])
     .replace(/\D/g, "")
     .trim();
 
-  const name = String(
-    row["Name"] ||
-      row["Candidate Name"] ||
-      "Student"
-  ).trim();
+  const name = getField(row, [
+    "Name",
+    "Candidate Name",
+    "Student Name"
+  ]) || "Student";
 
-  const venue = String(
-    row["Venue"] ||
-      row["Centre"] ||
-      row["Center"] ||
-      row["City"] ||
-      "Delhi"
-  ).trim();
+  const city = getField(row, [
+    "City"
+  ]) || extractCityFromSlot(sheetInfo.slot);
+
+  const venue = getField(row, [
+    "Venue",
+    "Centre",
+    "Center",
+    "Test Centre",
+    "Test Center"
+  ]) || city || "Delhi";
+
+  const gsTiming = getField(row, [
+    "GS Paper I Slot",
+    "GS Slot",
+    "Paper I Slot",
+    "Paper 1 Slot",
+    "General Studies",
+    "GS Paper"
+  ]) || "9:30 AM - 11:30 AM";
+
+  const csatTiming = getField(row, [
+    "CSAT",
+    "CSAT Slot",
+    "Paper II Slot",
+    "Paper 2 Slot",
+    "GS Pap CSAT",
+    "Paper II : CSAT"
+  ]) || "2:30 PM - 4:30 PM";
 
   const correct = normalizeNumber(
-    row["Correct"] ||
-      row["Paper I Correct"] ||
-      row["GS Correct"]
+    getField(row, [
+      "Correct",
+      "Paper I Correct",
+      "GS Correct"
+    ])
   );
 
   const incorrect = normalizeNumber(
-    row["Incorrect"] ||
-      row["Paper I Incorrect"] ||
-      row["GS Incorrect"]
+    getField(row, [
+      "Incorrect",
+      "Paper I Incorrect",
+      "GS Incorrect"
+    ])
   );
 
   const blank = normalizeNumber(
-    row["Blank"] ||
-      row["Paper I Blank"] ||
-      row["GS Blank"]
+    getField(row, [
+      "Blank",
+      "Paper I Blank",
+      "GS Blank"
+    ])
   );
 
   const sheetScore = normalizeNumber(
-    row["Score"] ||
-      row["Paper I Score"] ||
-      row["GS Score"]
+    getField(row, [
+      "Score",
+      "Paper I Score",
+      "GS Score"
+    ])
   );
 
   const hasResultData =
-    rowHasValue(row["Correct"]) ||
-    rowHasValue(row["Incorrect"]) ||
-    rowHasValue(row["Blank"]) ||
-    rowHasValue(row["Score"]) ||
-    rowHasValue(row["Paper I Correct"]) ||
-    rowHasValue(row["Paper I Incorrect"]) ||
-    rowHasValue(row["Paper I Blank"]) ||
-    rowHasValue(row["Paper I Score"]) ||
-    rowHasValue(row["GS Correct"]) ||
-    rowHasValue(row["GS Incorrect"]) ||
-    rowHasValue(row["GS Blank"]) ||
-    rowHasValue(row["GS Score"]);
+    rowHasValue(getField(row, ["Correct"])) ||
+    rowHasValue(getField(row, ["Incorrect"])) ||
+    rowHasValue(getField(row, ["Blank"])) ||
+    rowHasValue(getField(row, ["Score"])) ||
+    rowHasValue(getField(row, ["Paper I Correct"])) ||
+    rowHasValue(getField(row, ["Paper I Incorrect"])) ||
+    rowHasValue(getField(row, ["Paper I Blank"])) ||
+    rowHasValue(getField(row, ["Paper I Score"])) ||
+    rowHasValue(getField(row, ["GS Correct"])) ||
+    rowHasValue(getField(row, ["GS Incorrect"])) ||
+    rowHasValue(getField(row, ["GS Blank"])) ||
+    rowHasValue(getField(row, ["GS Score"]));
 
   const derivedScore =
     hasResultData && !Number.isNaN(sheetScore)
@@ -218,7 +302,10 @@ function normalizeStudentRow(row) {
   return {
     mobile,
     name,
+    city,
     venue,
+    slot: sheetInfo.slot || "",
+    gid: sheetInfo.gid || "",
     examDate: "April 18th Saturday, 2026",
     rank: hasResultData ? generateRankFromScore(derivedScore) : "-",
     papers: hasResultData
@@ -248,16 +335,26 @@ function normalizeStudentRow(row) {
     timings: [
       {
         subject: "Paper I (General Studies)",
-        time: row["GS Paper I Slot"] || "9:30 AM - 11:30 AM"
+        time: gsTiming
       },
       {
         subject: "Paper II (CSAT)",
-        time: row["CSAT"] || "2:30 PM - 4:30 PM"
+        time: csatTiming
       }
     ],
     originalScore: hasResultData ? derivedScore : null,
     hasResultData
   };
+}
+
+function extractCityFromSlot(slot) {
+  const value = String(slot || "").toLowerCase();
+
+  if (value.includes("hyderabad")) return "Hyderabad";
+  if (value.includes("pune")) return "Pune";
+  if (value.includes("delhi")) return "Delhi";
+
+  return "";
 }
 
 function normalizeNumber(value) {
@@ -633,6 +730,10 @@ function downloadAdmitCard() {
         <td>Venue of Examination</td>
         <td>${escapeHtml(student.venue)}</td>
       </tr>
+      <tr>
+        <td>Slot</td>
+        <td>${escapeHtml(student.slot || "")}</td>
+      </tr>
     </table>
 
     <table class="print-time-table">
@@ -662,7 +763,8 @@ function downloadAdmitCard() {
       <li>Candidates can give tests only at the assigned examination venue and allotted examination time.</li>
       <li>Fill Name, Mobile no. and other details carefully.</li>
     </ul>
-        <div class="print-assistance">
+
+    <div class="print-assistance">
       <span class="headphone-icon">🎧</span>
       <span>For any Assistance call <b>9811489560</b></span>
     </div>
@@ -735,24 +837,14 @@ function downloadAdmitCard() {
         font-weight: 700;
       }
 
-      .print-instructions {
-        padding-left: 18px;
-        margin-top: 0;
-        margin-bottom: 18px;
-      }
-
-      .print-instructions li {
-        margin-bottom: 8px;
-        line-height: 1.45;
-        font-size: 13px;
-      }
-
+      .print-info-table,
       .print-time-table {
         width: 100%;
         border-collapse: collapse;
         margin-top: 10px;
       }
 
+      .print-info-table td,
       .print-time-table th,
       .print-time-table td {
         border: 1px solid #111111;
@@ -764,6 +856,35 @@ function downloadAdmitCard() {
       .print-time-table th {
         background: #f2f4f7;
         font-weight: 700;
+      }
+
+      .print-instruction-heading {
+        margin-top: 18px;
+        margin-bottom: 10px;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .print-instructions {
+        padding-left: 18px;
+        margin-top: 0;
+        margin-bottom: 12px;
+      }
+
+      .print-instructions li {
+        margin-bottom: 8px;
+        line-height: 1.45;
+        font-size: 13px;
+      }
+
+      .print-assistance {
+        margin-top: 10px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .headphone-icon {
+        margin-right: 6px;
       }
     </style>
 
