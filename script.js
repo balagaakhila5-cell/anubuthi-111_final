@@ -9,6 +9,7 @@ let activeTab = "admit";
 const SHEET_ID = "1TOD8HTz3B4NxxvJAGyWqac_o4zIvQVc0gu63RQZ1q90";
 
 const SHEETS = [
+   { gid: "999745834", slot: "Delhi slot 1 SR IAS" },
   { gid: "884908558", slot: "Delhi slot 1 JVSD" },
   { gid: "40104784", slot: "Delhi slot 1 Popular Juice" },
   { gid: "121004388", slot: "Delhi slot 2 SR IAS" },
