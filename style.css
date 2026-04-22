@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 * {
   margin: 0;
   padding: 0;
@@ -1388,7 +1388,7 @@ input {
     height: 90px;
     font-size: 24px;
   }
-=======
+
 * {
   margin: 0;
   padding: 0;
@@ -2730,7 +2730,8 @@ input {
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 480px)
+ {
   .logo-row,
   .banner-section,
   .content-section {
@@ -2778,5 +2779,5 @@ input {
     height: 90px;
     font-size: 24px;
   }
->>>>>>> 21c60a98a9b8e7a4e981c34bf01fba9f37295755
+}
 }
