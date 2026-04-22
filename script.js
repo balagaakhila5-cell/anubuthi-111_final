@@ -6,18 +6,17 @@ const errorMessage = document.getElementById("errorMessage");
 let loggedInStudent = null;
 let activeTab = "admit";
 
-const SHEET_ID = "1TOD8HTz3B4NxxvJAGyWqac_o4zIvQVc0gu63RQZ1q90";
+const SHEET_ID = "1BpM8tATcqrShbne4fS_kLFQV7uuee1AX7u3Q5uC772I";
 
 const SHEETS = [
-   { gid: "999745834", slot: "Delhi slot 1 SR IAS" },
-  { gid: "884908558", slot: "Delhi slot 1 JVSD" },
-  { gid: "40104784", slot: "Delhi slot 1 Popular Juice" },
-  { gid: "121004388", slot: "Delhi slot 2 SR IAS" },
-  { gid: "1943346486", slot: "Delhi slot 2 JVSD" },
-  { gid: "146126469", slot: "Delhi slot 2 Popular Juice" },
-  { gid: "4471119", slot: "Hyderabad" },
-  { gid: "1842258190", slot: "Pune Slot 1" },
-  { gid: "2014015039", slot: "Pune Slot 2" }
+  { gid: "1370512469", slot: "NEW DELHI GS" },
+  { gid: "1628651856", slot: "PUNE GS" },
+  { gid: "998425198", slot: "HYDERABAD GS" },
+  { gid: "1425456635", slot: "GS ONLINE" },
+  { gid: "153930879", slot: "NEW DELHI CSAT" },
+  { gid: "61722243", slot: "PUNE CSAT" },
+  { gid: "1578514353", slot: "HYDERABAD CSAT" },
+  { gid: "1191610167", slot: "CSAT ONLINE" }
 ];
 
 if (mobileInput && loginBtn) {
@@ -55,7 +54,7 @@ if (mobileInput && loginBtn) {
     errorMessage.textContent = "";
 
     try {
-     const students = await fetchStudentsFromGoogleSheetCSV();
+      const students = await fetchStudentsFromGoogleSheetCSV();
 
       const student = students.find((item) => {
         return String(item.mobile).replace(/\D/g, "") === mobileNumber;
@@ -82,11 +81,11 @@ if (mobileInput && loginBtn) {
 }
 
 async function fetchStudentsFromGoogleSheetCSV() {
-  let allData = [];
+  const studentMap = new Map();
 
   for (let i = 0; i < SHEETS.length; i++) {
-    const gid = SHEETS[i].gid;
-
+    const sheetInfo = SHEETS[i];
+    const gid = sheetInfo.gid;
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
 
     const response = await fetch(url);
@@ -109,12 +108,152 @@ async function fetchStudentsFromGoogleSheetCSV() {
       return obj;
     });
 
-    const normalized = rawData.map(normalizeStudentRow).filter((item) => item.mobile);
+    for (const row of rawData) {
+      const normalizedRow = normalizeStudentRow(row, sheetInfo);
 
-    allData = [...allData, ...normalized];
+      if (!normalizedRow.mobile) continue;
+
+      if (!studentMap.has(normalizedRow.mobile)) {
+        studentMap.set(
+          normalizedRow.mobile,
+          createBaseStudent(normalizedRow.mobile, normalizedRow)
+        );
+      }
+
+      const existingStudent = studentMap.get(normalizedRow.mobile);
+      mergeStudentData(existingStudent, normalizedRow);
+    }
   }
 
-  return allData;
+  const finalStudents = Array.from(studentMap.values()).map(finalizeStudent);
+  return finalStudents;
+}
+
+function createBaseStudent(mobile, rowData = {}) {
+  return {
+    mobile,
+    name: rowData.name || "Student",
+    city: rowData.city || "",
+    venue: rowData.venue || "",
+    examDate: "April 18th Saturday, 2026",
+    rank: "-",
+    gsPaper: null,
+    csatPaper: null,
+    gsAir: "",
+    csatAir: "",
+    timings: {
+      gs: "9:30 AM - 11:30 AM",
+      csat: "2:30 PM - 4:30 PM"
+    },
+    instructions: [
+      "The mobile number filled in the OMR Sheet will be treated as the roll number and results can be accessed using the same mobile number only.",
+      "You must report at the Examination Center 30 minutes prior to the commencement of the exam.",
+      "Candidates can give tests only at the assigned examination venue and allotted examination time.",
+      "Fill Name, Mobile no. and other details carefully."
+    ]
+  };
+}
+
+function mergeStudentData(existingStudent, incomingRow) {
+  if (!existingStudent.name || existingStudent.name === "Student") {
+    existingStudent.name = incomingRow.name || existingStudent.name;
+  }
+
+  if (!existingStudent.city) {
+    existingStudent.city = incomingRow.city || existingStudent.city;
+  }
+
+  if (!existingStudent.venue) {
+    existingStudent.venue = incomingRow.venue || existingStudent.venue;
+  }
+
+  if (incomingRow.gsTiming) {
+    existingStudent.timings.gs = incomingRow.gsTiming;
+  }
+
+  if (incomingRow.csatTiming) {
+    existingStudent.timings.csat = incomingRow.csatTiming;
+  }
+
+  if (incomingRow.paperType === "GS" && incomingRow.paperData) {
+    existingStudent.gsPaper = incomingRow.paperData;
+
+    if (incomingRow.airValue !== "") {
+      existingStudent.gsAir = incomingRow.airValue;
+      existingStudent.rank = incomingRow.airValue;
+    }
+
+    if (!existingStudent.city && incomingRow.city) {
+      existingStudent.city = incomingRow.city;
+    }
+
+    if (!existingStudent.venue && incomingRow.venue) {
+      existingStudent.venue = incomingRow.venue;
+    }
+  }
+
+  if (incomingRow.paperType === "CSAT" && incomingRow.paperData) {
+    existingStudent.csatPaper = incomingRow.paperData;
+
+    if (incomingRow.airValue !== "" && !existingStudent.rank) {
+      existingStudent.csatAir = incomingRow.airValue;
+      existingStudent.rank = incomingRow.airValue;
+    }
+
+    if (!existingStudent.city && incomingRow.city) {
+      existingStudent.city = incomingRow.city;
+    }
+
+    if (!existingStudent.venue && incomingRow.venue) {
+      existingStudent.venue = incomingRow.venue;
+    }
+  }
+}
+
+function finalizeStudent(student) {
+  const papers = [];
+
+  if (student.gsPaper) {
+    papers.push(student.gsPaper);
+  }
+
+  if (student.csatPaper) {
+    papers.push(student.csatPaper);
+  }
+
+  const hasResultData = papers.length > 0;
+
+  let rank = student.rank;
+  if (
+    (!rank || rank === "-") &&
+    student.gsPaper &&
+    student.gsPaper.score !== undefined
+  ) {
+    rank = generateRankFromScore(student.gsPaper.score);
+  }
+
+  return {
+    mobile: student.mobile,
+    name: student.name || "Student",
+    city: student.city || "",
+    venue: student.venue || student.city || "Delhi",
+    examDate: student.examDate,
+    rank: rank || "-",
+    papers,
+    instructions: student.instructions,
+    timings: [
+      {
+        subject: "Paper I (General Studies)",
+        time: student.timings.gs || "9:30 AM - 11:30 AM"
+      },
+      {
+        subject: "Paper II (CSAT)",
+        time: student.timings.csat || "2:30 PM - 4:30 PM"
+      }
+    ],
+    originalScore: student.gsPaper ? Number(student.gsPaper.score || 0) : null,
+    hasResultData
+  };
 }
 
 function parseCSV(text) {
@@ -196,6 +335,7 @@ function normalizeStudentRow(row, sheetInfo = {}) {
     "PhoneNumber",
     "Phone",
     "Mob No",
+    "Mob No.",
     "Mobile",
     "Mobile No",
     "Mobile Number",
@@ -204,75 +344,64 @@ function normalizeStudentRow(row, sheetInfo = {}) {
     .replace(/\D/g, "")
     .trim();
 
-  const name = getField(row, [
-    "Name",
-    "Candidate Name",
-    "Student Name"
-  ]) || "Student";
+  const name =
+    getField(row, ["Name", "Candidate Name", "Student Name"]) || "Student";
 
-  const city = getField(row, [
-    "City"
-  ]) || extractCityFromSlot(sheetInfo.slot);
+  const city =
+    getField(row, ["City", "Centre", "Center", "Venue"]) ||
+    extractCityFromSlot(sheetInfo.slot);
 
-  const venue = getField(row, [
-    "Venue",
-    "Centre",
-    "Center",
-    "Test Centre",
-    "Test Center"
-  ]) || city || "Delhi";
+  const venue =
+    getField(row, [
+      "Venue",
+      "Centre",
+      "Center",
+      "Test Centre",
+      "Test Center",
+      "City"
+    ]) ||
+    city ||
+    "Delhi";
 
-  const gsTiming = getField(row, [
-    "GS Paper I Slot",
-    "GS Slot",
-    "Paper I Slot",
-    "Paper 1 Slot",
-    "General Studies",
-    "GS Paper"
-  ]) || "9:30 AM - 11:30 AM";
+  const gsTiming =
+    getField(row, [
+      "GS Paper I Slot",
+      "GS Slot",
+      "Paper I Slot",
+      "Paper 1 Slot",
+      "General Studies",
+      "GS Paper"
+    ]) || "9:30 AM - 11:30 AM";
 
-  const csatTiming = getField(row, [
-    "CSAT",
-    "CSAT Slot",
-    "Paper II Slot",
-    "Paper 2 Slot",
-    "GS Pap CSAT",
-    "Paper II : CSAT"
-  ]) || "2:30 PM - 4:30 PM";
+  const csatTiming =
+    getField(row, [
+      "CSAT",
+      "CSAT Slot",
+      "Paper II Slot",
+      "Paper 2 Slot",
+      "GS Pap CSAT",
+      "Paper II : CSAT"
+    ]) || "2:30 PM - 4:30 PM";
 
   const correct = normalizeNumber(
-    getField(row, [
-      "Correct",
-      "Paper I Correct",
-      "GS Correct"
-    ])
+    getField(row, ["Correct", "Paper I Correct", "GS Correct"])
   );
 
   const incorrect = normalizeNumber(
-    getField(row, [
-      "Incorrect",
-      "Paper I Incorrect",
-      "GS Incorrect"
-    ])
+    getField(row, ["Incorrect", "Paper I Incorrect", "GS Incorrect"])
   );
 
   const blank = normalizeNumber(
-    getField(row, [
-      "Blank",
-      "Paper I Blank",
-      "GS Blank"
-    ])
+    getField(row, ["Blank", "Paper I Blank", "GS Blank"])
   );
 
   const sheetScore = normalizeNumber(
-    getField(row, [
-      "Score",
-      "Paper I Score",
-      "GS Score"
-    ])
+    getField(row, ["Score", "Paper I Score", "GS Score"])
   );
 
-  const hasResultData =
+  const airValue = getField(row, ["AIR", "Air", "Rank", "RANK"]);
+
+  const hasScoreColumns =
     rowHasValue(getField(row, ["Correct"])) ||
     rowHasValue(getField(row, ["Incorrect"])) ||
     rowHasValue(getField(row, ["Blank"])) ||
@@ -287,55 +416,49 @@ function normalizeStudentRow(row, sheetInfo = {}) {
     rowHasValue(getField(row, ["GS Score"]));
 
   const derivedScore =
-    hasResultData && !Number.isNaN(sheetScore)
+    hasScoreColumns && !Number.isNaN(sheetScore)
       ? sheetScore
       : calculateScore(correct, incorrect);
+
+  const isCSATSheet = String(sheetInfo.slot || "").toUpperCase().includes("CSAT");
+  const isGSSheet =
+    String(sheetInfo.slot || "").toUpperCase().includes("GS") && !isCSATSheet;
+
+  let paperType = "";
+  let paperData = null;
+
+  if (isGSSheet && hasScoreColumns) {
+    paperType = "GS";
+    paperData = {
+      paper: "Paper I : General Studies",
+      correct,
+      incorrect,
+      blank,
+      score: !Number.isNaN(sheetScore) ? sheetScore : derivedScore
+    };
+  }
+
+  if (isCSATSheet && hasScoreColumns) {
+    paperType = "CSAT";
+    paperData = {
+      paper: "Paper II : CSAT",
+      correct,
+      incorrect,
+      blank,
+      score: !Number.isNaN(sheetScore) ? sheetScore : derivedScore
+    };
+  }
 
   return {
     mobile,
     name,
     city,
     venue,
-    slot: sheetInfo.slot || "",
-    gid: sheetInfo.gid || "",
-    examDate: "April 18th Saturday, 2026",
-    rank: hasResultData ? generateRankFromScore(derivedScore) : "-",
-    papers: hasResultData
-      ? [
-          {
-            paper: "Paper I : General Studies",
-            correct,
-            incorrect,
-            blank,
-            score: !Number.isNaN(sheetScore) ? sheetScore : derivedScore
-          },
-          {
-            paper: "Paper II : CSAT",
-            correct: 0,
-            incorrect: 0,
-            blank: 0,
-            score: 0
-          }
-        ]
-      : [],
-    instructions: [
-      "The mobile number filled in the OMR Sheet will be treated as the roll number and results can be accessed using the same mobile number only.",
-      "You must report at the Examination Center 30 minutes prior to the commencement of the exam.",
-      "Candidates can give tests only at the assigned examination venue and allotted examination time.",
-      "Fill Name, Mobile no. and other details carefully."
-    ],
-    timings: [
-      {
-        subject: "Paper I (General Studies)",
-        time: gsTiming
-      },
-      {
-        subject: "Paper II (CSAT)",
-        time: csatTiming
-      }
-    ],
-    originalScore: hasResultData ? derivedScore : null,
-    hasResultData
+    gsTiming,
+    csatTiming,
+    paperType,
+    paperData,
+    airValue
   };
 }
 
@@ -345,6 +468,7 @@ function extractCityFromSlot(slot) {
   if (value.includes("hyderabad")) return "Hyderabad";
   if (value.includes("pune")) return "Pune";
   if (value.includes("delhi")) return "Delhi";
+  if (value.includes("online")) return "Online";
 
   return "";
 }
@@ -610,7 +734,7 @@ function renderResultPage() {
 
         <div class="rank-box-wrap">
           <div class="rank-title">All India Rank</div>
-          <div class="rank-box">${student.rank}</div>
+          <div class="rank-box">${escapeHtml(student.rank)}</div>
         </div>
       </div>
 
